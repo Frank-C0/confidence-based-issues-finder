@@ -1,0 +1,7 @@
+name: confidence-based-issues-finder
+
+description: Data cleaning using Cleanlab's DataLab and FiftyOne
+version: 0.1.0
+
+operators:
+  - confidence_based_find_issues
