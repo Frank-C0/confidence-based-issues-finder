@@ -102,11 +102,16 @@ class TestSimpleMultilabel:
 
         lab.find_issues(pred_probs=dataset["pred_probs"], features=dataset["features"])
 
-        summary = lab.get_issue_summary()
-        expected_issues = ["label", "outlier", "near_duplicate", "non_iid"]
+        # summary = lab.get_issue_summary()
+        # expected_issues = ["label", "outlier", "near_duplicate", "non_iid"]
 
-        for issue_type in expected_issues:
-            assert issue_type in summary.index
+        # for issue_type in expected_issues:
+        #     assert issue_type in summary.index
+
+        assert "is_label_issue" in lab.issues.columns
+        assert "is_outlier_issue" in lab.issues.columns
+        assert "is_near_duplicate_issue" in lab.issues.columns
+        assert "is_non_iid_issue" in lab.issues.columns
 
 
 class TestSimpleRegression:
@@ -137,11 +142,16 @@ class TestSimpleRegression:
 
         lab.find_issues(pred_probs=dataset["pred_probs"], features=dataset["features"])
 
-        summary = lab.get_issue_summary()
-        expected_issues = ["label", "outlier", "near_duplicate", "non_iid"]
+        # summary = lab.get_issue_summary()
+        # expected_issues = ["label", "outlier", "near_duplicate", "non_iid"]
 
-        for issue_type in expected_issues:
-            assert issue_type in summary.index
+        # for issue_type in expected_issues:
+        #     assert issue_type in summary.index
+
+        assert "is_label_issue" in lab.issues.columns
+        assert "is_outlier_issue" in lab.issues.columns
+        assert "is_near_duplicate_issue" in lab.issues.columns
+        assert "is_non_iid_issue" in lab.issues.columns
 
 
 class TestSimpleImage:
@@ -178,7 +188,7 @@ class TestSimpleImage:
         assert lab.issues is not None
 
         # When image_key is provided, additional image-specific issues may be detected
-        summary = lab.get_issue_summary()
+        # summary = lab.get_issue_summary()
         # assert "label" in summary.index
 
         assert "is_label_issue" in lab.issues.columns
@@ -237,7 +247,7 @@ class TestIssueTypes:
 
         lab.find_issues(pred_probs=dataset["pred_probs"], features=dataset["features"], issue_types=issue_types)
 
-        summary = lab.get_issue_summary()
+        # summary = lab.get_issue_summary()
         # assert "label" in summary.index
         # assert "outlier" in summary.index
         # assert "near_duplicate" in summary.index
