@@ -16,16 +16,16 @@ All real data generators use joblib caching to avoid repeated computation.
 """
 
 from .data_generators import DatalabInputGenerator, create_minimal_dataset
-from .real_data_generators import RealDataGenerator
 from .dataset_loaders import DatasetLoader
 from .feature_extractors import FeatureExtractor
 from .model_trainers import ModelTrainer
+from .real_data_generators import RealDataGenerator
 
 __all__ = [
     "DatalabInputGenerator",
-    "create_minimal_dataset",
-    "RealDataGenerator",
     "DatasetLoader",
     "FeatureExtractor",
     "ModelTrainer",
+    "RealDataGenerator",
+    "create_minimal_dataset",
 ]

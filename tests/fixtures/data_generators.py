@@ -16,26 +16,26 @@ For image data:
 from pathlib import Path
 from typing import Any
 
+# try:
+from datasets import Dataset, Image
 import joblib
 import numpy as np
 import pandas as pd
+from PIL import Image as PILImage
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.model_selection import cross_val_predict
 from sklearn.neighbors import NearestNeighbors
 
-# try:
-from datasets import Dataset, Image
-from PIL import Image as PILImage
 HAS_DATASETS = True
 # except ImportError:
-    # HAS_DATASETS = False
+# HAS_DATASETS = False
 
 
 class DatalabInputGenerator:
     """
     Generates all necessary inputs for Datalab.find_issues().
-    
+
     This class creates simple, reproducible synthetic data that matches
     the requirements for Datalab's find_issues() method:
     - pred_probs: (n_samples, n_classes) probability predictions
@@ -50,15 +50,11 @@ class DatalabInputGenerator:
         np.random.seed(seed)
 
     def generate_classification_data(
-        self,
-        n_samples: int = 100,
-        n_features: int = 10,
-        n_classes: int = 3,
-        noise_level: float = 0.1
+        self, n_samples: int = 100, n_features: int = 10, n_classes: int = 3, noise_level: float = 0.1
     ) -> dict[str, Any]:
         """
         Generate complete dataset for classification tasks.
-        
+
         Returns a dictionary with all Datalab inputs:
         - data: dict format {"X": features, "y": labels}
         - labels: numpy array of shape (n_samples,)
@@ -111,7 +107,7 @@ class DatalabInputGenerator:
     ) -> dict[str, Any]:
         """
         Generate complete dataset for multilabel classification tasks.
-        
+
         Returns similar structure to classification data, but with multilabel format.
         """
         cache_file = self.cache_dir / f"multilabel_{n_samples}_{n_features}_{n_classes}.pkl"
@@ -157,7 +153,7 @@ class DatalabInputGenerator:
     ) -> dict[str, Any]:
         """
         Generate complete dataset for regression tasks.
-        
+
         For regression, pred_probs is a 1D array of predicted values.
         """
         cache_file = self.cache_dir / f"regression_{n_samples}_{n_features}.pkl"
@@ -188,15 +184,11 @@ class DatalabInputGenerator:
         return result
 
     def _generate_pred_probs(
-        self,
-        features: np.ndarray,
-        labels: np.ndarray,
-        n_classes: int,
-        n_folds: int = 3
+        self, features: np.ndarray, labels: np.ndarray, n_classes: int, n_folds: int = 3
     ) -> np.ndarray:
         """
         Generate realistic pred_probs using cross-validation.
-        
+
         Uses a simple HistGradientBoostingClassifier for speed.
         """
         cache_file = self.cache_dir / f"pred_probs_{len(features)}_{n_classes}_{n_folds}.pkl"
@@ -204,31 +196,17 @@ class DatalabInputGenerator:
         if cache_file.exists():
             return joblib.load(cache_file)
 
-        clf = HistGradientBoostingClassifier(
-            max_iter=50,
-            random_state=self.seed,
-            verbose=0
-        )
+        clf = HistGradientBoostingClassifier(max_iter=50, random_state=self.seed, verbose=0)
 
-        pred_probs = cross_val_predict(
-            clf, features, labels,
-            cv=n_folds,
-            method="predict_proba",
-            n_jobs=-1
-        )
+        pred_probs = cross_val_predict(clf, features, labels, cv=n_folds, method="predict_proba", n_jobs=-1)
 
         joblib.dump(pred_probs, cache_file)
         return pred_probs
 
-    def _generate_knn_graph(
-        self,
-        features: np.ndarray,
-        n_neighbors: int = 5,
-        metric: str = "euclidean"
-    ) -> csr_matrix:
+    def _generate_knn_graph(self, features: np.ndarray, n_neighbors: int = 5, metric: str = "euclidean") -> csr_matrix:
         """
         Generate k-nearest neighbors graph in the format Datalab expects.
-        
+
         Returns a sparse CSR matrix with:
         - Shape: (n_samples, n_samples)
         - Non-zero entries: distances to k nearest neighbors
@@ -253,24 +231,20 @@ class DatalabInputGenerator:
         return knn_graph
 
     def generate_image_data(
-        self,
-        n_samples: int = 80,
-        n_classes: int = 3,
-        image_shape: tuple = (32, 32, 3),
-        noise_level: float = 0.1
+        self, n_samples: int = 80, n_classes: int = 3, image_shape: tuple = (32, 32, 3), noise_level: float = 0.1
     ) -> dict[str, Any]:
         """
         Generate complete dataset for image classification tasks.
-        
+
         Creates synthetic images and extracts features from them.
         Returns format compatible with Datalab for image tasks.
-        
+
         Args:
             n_samples: Number of image samples to generate
             n_classes: Number of classes
             image_shape: Shape of images (height, width, channels)
             noise_level: Fraction of labels to corrupt
-            
+
         Returns:
             Dictionary with:
             - data: dict with features and labels (for Datalab)
@@ -336,26 +310,21 @@ class DatalabInputGenerator:
         joblib.dump(result, cache_file)
         return result
 
-    def _generate_synthetic_images(
-        self,
-        n_samples: int,
-        n_classes: int,
-        image_shape: tuple
-    ) -> np.ndarray:
+    def _generate_synthetic_images(self, n_samples: int, n_classes: int, image_shape: tuple) -> np.ndarray:
         """
         Generate simple synthetic images with class-specific patterns.
-        
+
         Each class has a different visual pattern (color bias, shapes, etc.)
         """
         images = np.zeros((n_samples, *image_shape), dtype=np.float32)
-        
+
         for i in range(n_samples):
             class_id = i % n_classes
-            
+
             # Create base image with class-specific color bias
             base_color = (class_id / n_classes) * 0.5 + 0.25
             images[i] = base_color
-            
+
             # Add class-specific patterns
             if class_id == 0:
                 # Class 0: Add horizontal stripes
@@ -366,50 +335,52 @@ class DatalabInputGenerator:
             else:
                 # Class 2+: Add checkerboard pattern
                 images[i, ::3, ::3, :] += 0.3
-            
+
             # Add random noise
             images[i] += np.random.randn(*image_shape) * 0.1
-            
+
             # Clip to valid range [0, 1]
             images[i] = np.clip(images[i], 0, 1)
-        
+
         return images
 
     def _extract_image_features(self, images: np.ndarray) -> np.ndarray:
         """
         Extract simple features from images.
-        
+
         Uses basic statistics and hand-crafted features instead of deep learning.
         This keeps dependencies minimal and tests fast.
         """
         n_samples = len(images)
         features_list = []
-        
+
         for img in images:
             # Flatten and take basic statistics
             flat = img.reshape(-1)
-            
+
             feat = [
                 flat.mean(),  # Mean intensity
-                flat.std(),   # Standard deviation
-                flat.min(),   # Min value
-                flat.max(),   # Max value
+                flat.std(),  # Standard deviation
+                flat.min(),  # Min value
+                flat.max(),  # Max value
                 np.median(flat),  # Median
             ]
-            
+
             # Add per-channel statistics if color image
             if img.shape[-1] == 3:
                 for c in range(3):
                     channel = img[:, :, c].flatten()
-                    feat.extend([
-                        channel.mean(),
-                        channel.std(),
-                    ])
-            
+                    feat.extend(
+                        [
+                            channel.mean(),
+                            channel.std(),
+                        ]
+                    )
+
             features_list.append(feat)
-        
+
         features = np.array(features_list, dtype=np.float32)
-        
+
         # Add some random features to increase dimensionality
         random_feats = np.random.randn(n_samples, 10).astype(np.float32)
         features = np.hstack([features, random_feats])
@@ -422,7 +393,7 @@ class DatalabInputGenerator:
         n_classes: int = 3,
         image_shape: tuple = (32, 32, 3),
         noise_level: float = 0.1,
-        include_image_column: bool = True
+        include_image_column: bool = True,
     ) -> dict[str, Any] | None:
         """
         Generate Hugging Face Dataset for image classification.
@@ -449,8 +420,7 @@ class DatalabInputGenerator:
         """
         if not HAS_DATASETS:
             raise ImportError(
-                "Hugging Face datasets is required for this feature. "
-                "Install with: pip install datasets pillow"
+                "Hugging Face datasets is required for this feature. Install with: pip install datasets pillow"
             )
 
         cache_file = self.cache_dir / f"hf_image_{n_samples}_{n_classes}_{image_shape[0]}.pkl"
@@ -542,7 +512,7 @@ class DatalabInputGenerator:
 def create_minimal_dataset(n_samples: int = 50, n_classes: int = 3) -> dict[str, Any]:
     """
     Create a minimal dataset for quick testing (no caching).
-    
+
     Use this for simple unit tests that don't need caching.
     """
     np.random.seed(42)

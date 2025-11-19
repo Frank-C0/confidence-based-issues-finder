@@ -444,29 +444,29 @@ class TestDatalabHuggingFaceImageDataset:
         issues = lab.get_issues()
         assert len(issues) == len(data["labels"])
 
-    # def test_huggingface_dataset_with_all_inputs(self, huggingface_image_dataset):
-    #     """Test Hugging Face format with all inputs."""
-    #     data = huggingface_image_dataset
+    def test_huggingface_dataset_with_all_inputs(self, huggingface_image_dataset):
+        """Test Hugging Face format with all inputs."""
+        data = huggingface_image_dataset
 
-    #     lab = Datalab(verbosity=4,
-    #         data=data["hf_dataset"],
-    #         label_name=data["label_name"],
-    #         task="classification",
-    #         image_key=data["image_key"]
-    #     )
+        lab = Datalab(verbosity=4,
+            data=data["hf_dataset"],
+            label_name=data["label_name"],
+            task="classification",
+            image_key=data["image_key"]
+        )
 
-    #     lab.find_issues(
-    #         pred_probs=data["pred_probs"],
-    #         features=data["features"],
-    #         knn_graph=data["knn_graph"]
-    #     )
+        lab.find_issues(
+            pred_probs=data["pred_probs"],
+            features=data["features"],
+            knn_graph=data["knn_graph"]
+        )
 
-    #     issues = lab.get_issues()
-    #     assert len(issues) == len(data["labels"])
+        issues = lab.get_issues()
+        assert len(issues) == len(data["labels"])
 
-    #     # Should detect multiple issue types
-    #     issue_columns = [col for col in issues.columns if col.startswith("is_") and col.endswith("_issue")]
-    #     assert len(issue_columns) > 0
+        # Should detect multiple issue types
+        issue_columns = [col for col in issues.columns if col.startswith("is_") and col.endswith("_issue")]
+        assert len(issue_columns) > 0
 
     def test_huggingface_dataset_has_image_column(self, small_huggingface_image_dataset):
         """Verify that Hugging Face dataset has PIL Image column."""

@@ -22,6 +22,7 @@ from .model_trainers import ModelTrainer
 
 try:
     from datasets import Dataset, Image
+
     HAS_DATASETS = True
 except ImportError:
     HAS_DATASETS = False
@@ -30,7 +31,7 @@ except ImportError:
 class RealDataGenerator:
     """
     Generates complete Datalab inputs using real datasets.
-    
+
     Combines:
     - Real dataset loading (Iris, Wine, CIFAR-10, MNIST, etc.)
     - Real feature extraction
@@ -42,20 +43,16 @@ class RealDataGenerator:
         self.cache_dir = cache_dir
         self.seed = seed
         np.random.seed(seed)
-        
+
         # Initialize submodules
         self.loader = DatasetLoader(cache_dir, seed)
         self.feature_extractor = FeatureExtractor(cache_dir, seed)
         self.trainer = ModelTrainer(cache_dir, seed)
 
-    def generate_iris_dataset(
-        self,
-        n_samples: int = 80,
-        noise_level: float = 0.1
-    ) -> dict[str, Any]:
+    def generate_iris_dataset(self, n_samples: int = 80, noise_level: float = 0.1) -> dict[str, Any]:
         """
         Generate Datalab inputs using Iris dataset.
-        
+
         Returns:
             Dictionary with all Datalab inputs:
             - data: dict format {"X": features, "y": labels}
@@ -73,12 +70,10 @@ class RealDataGenerator:
 
         # Load dataset
         iris = self.loader.load_iris(n_samples)
-        
+
         # Extract features (standardized)
-        features = self.feature_extractor.extract_tabular_features(
-            iris["X"], method="standard"
-        )
-        
+        features = self.feature_extractor.extract_tabular_features(iris["X"], method="standard")
+
         # Train model and get predictions
         training_result = self.trainer.train_and_cache_all(
             features,
@@ -86,7 +81,7 @@ class RealDataGenerator:
             task="classification",
             n_classes=iris["n_classes"],
             noise_level=noise_level,
-            model_type="gradient_boosting"
+            model_type="gradient_boosting",
         )
 
         result = {
@@ -103,11 +98,7 @@ class RealDataGenerator:
         joblib.dump(result, cache_file)
         return result
 
-    def generate_wine_dataset(
-        self,
-        n_samples: int = 80,
-        noise_level: float = 0.1
-    ) -> dict[str, Any]:
+    def generate_wine_dataset(self, n_samples: int = 80, noise_level: float = 0.1) -> dict[str, Any]:
         """Generate Datalab inputs using Wine dataset."""
         cache_file = self.cache_dir / f"wine_dataset_{n_samples}_{noise_level}.pkl"
 
@@ -116,12 +107,10 @@ class RealDataGenerator:
 
         # Load dataset
         wine = self.loader.load_wine(n_samples)
-        
+
         # Extract features (PCA)
-        features = self.feature_extractor.extract_tabular_features(
-            wine["X"], method="pca", n_components=10
-        )
-        
+        features = self.feature_extractor.extract_tabular_features(wine["X"], method="pca", n_components=10)
+
         # Train model and get predictions
         training_result = self.trainer.train_and_cache_all(
             features,
@@ -129,7 +118,7 @@ class RealDataGenerator:
             task="classification",
             n_classes=wine["n_classes"],
             noise_level=noise_level,
-            model_type="gradient_boosting"
+            model_type="gradient_boosting",
         )
 
         result = {
@@ -146,14 +135,10 @@ class RealDataGenerator:
         joblib.dump(result, cache_file)
         return result
 
-    def generate_digits_dataset(
-        self,
-        n_samples: int = 80,
-        noise_level: float = 0.1
-    ) -> dict[str, Any]:
+    def generate_digits_dataset(self, n_samples: int = 80, noise_level: float = 0.1) -> dict[str, Any]:
         """
         Generate Datalab inputs using Digits dataset (images).
-        
+
         Returns both dict and DataFrame formats for compatibility.
         """
         cache_file = self.cache_dir / f"digits_dataset_{n_samples}_{noise_level}.pkl"
@@ -163,12 +148,10 @@ class RealDataGenerator:
 
         # Load dataset
         digits = self.loader.load_digits(n_samples)
-        
+
         # Extract features from images
-        features = self.feature_extractor.extract_image_features(
-            digits["images"], method="combined"
-        )
-        
+        features = self.feature_extractor.extract_image_features(digits["images"], method="combined")
+
         # Train model and get predictions
         training_result = self.trainer.train_and_cache_all(
             features,
@@ -176,7 +159,7 @@ class RealDataGenerator:
             task="classification",
             n_classes=digits["n_classes"],
             noise_level=noise_level,
-            model_type="gradient_boosting"
+            model_type="gradient_boosting",
         )
 
         # Create DataFrame format
@@ -201,21 +184,14 @@ class RealDataGenerator:
         joblib.dump(result, cache_file)
         return result
 
-    def generate_mnist_dataset(
-        self,
-        n_samples: int = 80,
-        noise_level: float = 0.1
-    ) -> dict[str, Any]:
+    def generate_mnist_dataset(self, n_samples: int = 80, noise_level: float = 0.1) -> dict[str, Any]:
         """
         Generate Datalab inputs using MNIST dataset.
-        
+
         Requires Hugging Face datasets.
         """
         if not HAS_DATASETS:
-            raise ImportError(
-                "Hugging Face datasets required. "
-                "Install with: pip install datasets pillow"
-            )
+            raise ImportError("Hugging Face datasets required. Install with: pip install datasets pillow")
 
         cache_file = self.cache_dir / f"mnist_dataset_{n_samples}_{noise_level}.pkl"
 
@@ -224,12 +200,10 @@ class RealDataGenerator:
 
         # Load dataset
         mnist = self.loader.load_mnist(n_samples)
-        
+
         # Extract features from images
-        features = self.feature_extractor.extract_image_features(
-            mnist["images"], method="combined"
-        )
-        
+        features = self.feature_extractor.extract_image_features(mnist["images"], method="combined")
+
         # Train model and get predictions
         training_result = self.trainer.train_and_cache_all(
             features,
@@ -237,7 +211,7 @@ class RealDataGenerator:
             task="classification",
             n_classes=mnist["n_classes"],
             noise_level=noise_level,
-            model_type="gradient_boosting"
+            model_type="gradient_boosting",
         )
 
         # Create DataFrame format
@@ -262,21 +236,14 @@ class RealDataGenerator:
         joblib.dump(result, cache_file)
         return result
 
-    def generate_cifar10_dataset(
-        self,
-        n_samples: int = 80,
-        noise_level: float = 0.1
-    ) -> dict[str, Any]:
+    def generate_cifar10_dataset(self, n_samples: int = 80, noise_level: float = 0.1) -> dict[str, Any]:
         """
         Generate Datalab inputs using CIFAR-10 dataset.
-        
+
         Requires Hugging Face datasets.
         """
         if not HAS_DATASETS:
-            raise ImportError(
-                "Hugging Face datasets required. "
-                "Install with: pip install datasets pillow"
-            )
+            raise ImportError("Hugging Face datasets required. Install with: pip install datasets pillow")
 
         cache_file = self.cache_dir / f"cifar10_dataset_{n_samples}_{noise_level}.pkl"
 
@@ -285,12 +252,10 @@ class RealDataGenerator:
 
         # Load dataset
         cifar10 = self.loader.load_cifar10(n_samples)
-        
+
         # Extract features from images
-        features = self.feature_extractor.extract_image_features(
-            cifar10["images"], method="combined"
-        )
-        
+        features = self.feature_extractor.extract_image_features(cifar10["images"], method="combined")
+
         # Train model and get predictions
         training_result = self.trainer.train_and_cache_all(
             features,
@@ -298,7 +263,7 @@ class RealDataGenerator:
             task="classification",
             n_classes=cifar10["n_classes"],
             noise_level=noise_level,
-            model_type="gradient_boosting"
+            model_type="gradient_boosting",
         )
 
         # Create DataFrame format
@@ -328,19 +293,19 @@ class RealDataGenerator:
         n_samples: int = 80,
         noise_level: float = 0.1,
         dataset_name: str = "mnist",
-        include_image_column: bool = True
+        include_image_column: bool = True,
     ) -> dict[str, Any]:
         """
         Generate Hugging Face Dataset for image classification.
-        
+
         This format enables image-specific issue detection in Datalab.
-        
+
         Args:
             n_samples: Number of samples
             noise_level: Fraction of labels to corrupt
             dataset_name: "mnist", "cifar10", or "fashion_mnist"
             include_image_column: Whether to include PIL images
-            
+
         Returns:
             Dictionary with:
             - hf_dataset: Hugging Face Dataset object
@@ -352,10 +317,7 @@ class RealDataGenerator:
             - label_name: name of label column
         """
         if not HAS_DATASETS:
-            raise ImportError(
-                "Hugging Face datasets required. "
-                "Install with: pip install datasets pillow"
-            )
+            raise ImportError("Hugging Face datasets required. Install with: pip install datasets pillow")
 
         cache_file = self.cache_dir / f"hf_{dataset_name}_{n_samples}_{noise_level}.pkl"
 
@@ -373,10 +335,8 @@ class RealDataGenerator:
             raise ValueError(f"Unknown dataset: {dataset_name}")
 
         # Extract features
-        features = self.feature_extractor.extract_image_features(
-            data["images"], method="combined"
-        )
-        
+        features = self.feature_extractor.extract_image_features(data["images"], method="combined")
+
         # Train model and get predictions
         training_result = self.trainer.train_and_cache_all(
             features,
@@ -384,7 +344,7 @@ class RealDataGenerator:
             task="classification",
             n_classes=data["n_classes"],
             noise_level=noise_level,
-            model_type="gradient_boosting"
+            model_type="gradient_boosting",
         )
 
         # Create Hugging Face Dataset
