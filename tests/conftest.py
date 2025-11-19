@@ -79,6 +79,58 @@ def regression_dataset(data_generator):
     )
 
 
+@pytest.fixture(scope="session")
+def image_dataset(data_generator):
+    """Pre-generated image dataset (80 samples, 3 classes)."""
+    return data_generator.generate_image_data(
+        n_samples=80,
+        n_classes=3,
+        image_shape=(32, 32, 3),
+        noise_level=0.1
+    )
+
+
+@pytest.fixture(scope="session")
+def small_image_dataset(data_generator):
+    """Small image dataset for fast tests (30 samples)."""
+    return data_generator.generate_image_data(
+        n_samples=30,
+        n_classes=3,
+        image_shape=(16, 16, 3),
+        noise_level=0.1
+    )
+
+
+@pytest.fixture(scope="session")
+def huggingface_image_dataset(data_generator):
+    """Hugging Face image dataset (80 samples, 3 classes)."""
+    try:
+        return data_generator.generate_huggingface_image_dataset(
+            n_samples=80,
+            n_classes=3,
+            image_shape=(32, 32, 3),
+            noise_level=0.1,
+            include_image_column=True
+        )
+    except ImportError:
+        pytest.skip("Hugging Face datasets not installed")
+
+
+@pytest.fixture(scope="session")
+def small_huggingface_image_dataset(data_generator):
+    """Small Hugging Face image dataset for fast tests (30 samples)."""
+    try:
+        return data_generator.generate_huggingface_image_dataset(
+            n_samples=30,
+            n_classes=3,
+            image_shape=(16, 16, 3),
+            noise_level=0.1,
+            include_image_column=True
+        )
+    except ImportError:
+        pytest.skip("Hugging Face datasets not installed")
+
+
 # Configuration for pytest
 def pytest_configure(config):
     """Register custom markers."""
@@ -87,4 +139,5 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "classification: tests for classification tasks")
     config.addinivalue_line("markers", "multilabel: tests for multilabel tasks")
     config.addinivalue_line("markers", "regression: tests for regression tasks")
+    config.addinivalue_line("markers", "image: tests for image tasks")
     config.addinivalue_line("markers", "validator: tests for EnhancedIssueTypesValidator")
