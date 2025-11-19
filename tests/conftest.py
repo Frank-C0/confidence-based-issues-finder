@@ -4,8 +4,13 @@ Pytest fixtures for all tests.
 Provides shared fixtures for:
 - Cache directory
 - Random seed
-- Data generators
+- Data generators (both real and synthetic)
 - Pre-generated datasets for different tasks
+
+Uses real datasets (Iris, Wine, MNIST, CIFAR-10, etc.) with:
+- Real feature extraction
+- Real model training and predictions
+- Caching with joblib to avoid repeated computation
 """
 
 from pathlib import Path
@@ -13,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from fixtures.data_generators import DatalabInputGenerator
+from fixtures.real_data_generators import RealDataGenerator
 
 # Cache configuration
 CACHE_DIR = Path("./test_cache")
@@ -34,28 +40,30 @@ def random_seed():
 
 @pytest.fixture(scope="session")
 def data_generator(cache_dir, random_seed):
-    """Data generator instance."""
+    """Synthetic data generator instance (for backward compatibility)."""
     return DatalabInputGenerator(cache_dir, random_seed)
 
 
 @pytest.fixture(scope="session")
-def classification_dataset(data_generator):
-    """Pre-generated classification dataset (80 samples, 3 classes)."""
-    return data_generator.generate_classification_data(
+def real_data_generator(cache_dir, random_seed):
+    """Real data generator instance using actual datasets."""
+    return RealDataGenerator(cache_dir, random_seed)
+
+
+@pytest.fixture(scope="session")
+def classification_dataset(real_data_generator):
+    """Pre-generated classification dataset using Wine dataset (80 samples, 3 classes)."""
+    return real_data_generator.generate_wine_dataset(
         n_samples=80,
-        n_features=10,
-        n_classes=3,
         noise_level=0.1
     )
 
 
 @pytest.fixture(scope="session")
-def small_classification_dataset(data_generator):
-    """Small classification dataset for fast tests (30 samples)."""
-    return data_generator.generate_classification_data(
+def small_classification_dataset(real_data_generator):
+    """Small classification dataset using Iris (30 samples, 3 classes)."""
+    return real_data_generator.generate_iris_dataset(
         n_samples=30,
-        n_features=5,
-        n_classes=3,
         noise_level=0.1
     )
 
@@ -80,36 +88,31 @@ def regression_dataset(data_generator):
 
 
 @pytest.fixture(scope="session")
-def image_dataset(data_generator):
-    """Pre-generated image dataset (80 samples, 3 classes)."""
-    return data_generator.generate_image_data(
+def image_dataset(real_data_generator):
+    """Pre-generated image dataset using Digits dataset (80 samples, 10 classes)."""
+    return real_data_generator.generate_digits_dataset(
         n_samples=80,
-        n_classes=3,
-        image_shape=(32, 32, 3),
         noise_level=0.1
     )
 
 
 @pytest.fixture(scope="session")
-def small_image_dataset(data_generator):
-    """Small image dataset for fast tests (30 samples)."""
-    return data_generator.generate_image_data(
+def small_image_dataset(real_data_generator):
+    """Small image dataset using Digits for fast tests (30 samples)."""
+    return real_data_generator.generate_digits_dataset(
         n_samples=30,
-        n_classes=3,
-        image_shape=(16, 16, 3),
         noise_level=0.1
     )
 
 
 @pytest.fixture(scope="session")
-def huggingface_image_dataset(data_generator):
-    """Hugging Face image dataset (80 samples, 3 classes)."""
+def huggingface_image_dataset(real_data_generator):
+    """Hugging Face image dataset using MNIST (80 samples, 10 classes)."""
     try:
-        return data_generator.generate_huggingface_image_dataset(
+        return real_data_generator.generate_huggingface_image_dataset(
             n_samples=80,
-            n_classes=3,
-            image_shape=(32, 32, 3),
             noise_level=0.1,
+            dataset_name="mnist",
             include_image_column=True
         )
     except ImportError:
@@ -117,14 +120,13 @@ def huggingface_image_dataset(data_generator):
 
 
 @pytest.fixture(scope="session")
-def small_huggingface_image_dataset(data_generator):
-    """Small Hugging Face image dataset for fast tests (30 samples)."""
+def small_huggingface_image_dataset(real_data_generator):
+    """Small Hugging Face image dataset using Fashion MNIST for fast tests (30 samples)."""
     try:
-        return data_generator.generate_huggingface_image_dataset(
+        return real_data_generator.generate_huggingface_image_dataset(
             n_samples=30,
-            n_classes=3,
-            image_shape=(16, 16, 3),
             noise_level=0.1,
+            dataset_name="fashion_mnist",
             include_image_column=True
         )
     except ImportError:

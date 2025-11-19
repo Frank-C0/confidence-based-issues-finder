@@ -21,7 +21,7 @@ class TestDatalabBasicIntegration:
         """Test Datalab with only pred_probs."""
         data = small_classification_dataset
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -37,7 +37,7 @@ class TestDatalabBasicIntegration:
         """Test Datalab with only features."""
         data = small_classification_dataset
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -52,7 +52,7 @@ class TestDatalabBasicIntegration:
         """Test Datalab with only knn_graph."""
         data = small_classification_dataset
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -67,7 +67,7 @@ class TestDatalabBasicIntegration:
         """Test Datalab with all inputs (pred_probs, features, knn_graph)."""
         data = small_classification_dataset
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -100,7 +100,7 @@ class TestDatalabWithValidatedIssueTypes:
         validation_result = validator.validate(issue_types)
         assert validation_result["is_valid"]
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -124,7 +124,7 @@ class TestDatalabWithValidatedIssueTypes:
         validation_result = validator.validate(issue_types)
         assert validation_result["is_valid"]
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -157,7 +157,7 @@ class TestDatalabWithValidatedIssueTypes:
         validation_result = validator.validate(issue_types)
         assert validation_result["is_valid"]
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -191,7 +191,7 @@ class TestDatalabWithCustomParameters:
         validation_result = validator.validate(issue_types)
         assert validation_result["is_valid"]
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -215,7 +215,7 @@ class TestDatalabWithCustomParameters:
         validation_result = validator.validate(issue_types)
         assert validation_result["is_valid"]
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -244,7 +244,7 @@ class TestDatalabIssueDetection:
         """Verify that label issues are actually detected."""
         data = classification_dataset
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -262,7 +262,7 @@ class TestDatalabIssueDetection:
         """Verify that issue scores are in valid range [0, 1]."""
         data = classification_dataset
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
@@ -286,7 +286,7 @@ class TestDatalabIssueDetection:
         """Test that issue summary is generated correctly."""
         data = classification_dataset
 
-        lab = Datalab(
+        lab = Datalab(verbosity=4,
             data=data["data"],
             label_name=data["label_name"],
             task="classification"
