@@ -1,24 +1,26 @@
 """
-Pytest fixtures for all tests.
+Simplified pytest fixtures for Datalab testing.
 
-Provides shared fixtures for:
-- Cache directory
-- Random seed
-- Data generators (both real and synthetic)
-- Pre-generated datasets for different tasks
+Provides fixtures for:
+- Small datasets (50 samples) for fast tests
+- Medium datasets (200 samples) for comprehensive tests
+- All task types: classification, multilabel, regression, image
 
-Uses real datasets (Iris, Wine, MNIST, CIFAR-10, etc.) with:
+Datasets are generated synthetically with:
+- Real model predictions (pred_probs) via cross-validation
 - Real feature extraction
-- Real model training and predictions
-- Caching with joblib to avoid repeated computation
+- KNN graphs
+- Caching with joblib to avoid recomputation
+
+For images: uses real MNIST data with PyTorch CNN
+For other tasks: uses synthetic sklearn data with RandomForest models
 """
 
 from pathlib import Path
 
 import pytest
 
-from fixtures.data_generators import DatalabInputGenerator
-from fixtures.real_data_generators import RealDataGenerator
+from fixtures import SimpleDatasetGenerator
 
 # Cache configuration
 CACHE_DIR = Path("./test_cache")
@@ -39,98 +41,61 @@ def random_seed():
 
 
 @pytest.fixture(scope="session")
-def data_generator(cache_dir, random_seed):
-    """Synthetic data generator instance (for backward compatibility)."""
-    return DatalabInputGenerator(cache_dir, random_seed)
+def generator(cache_dir, random_seed):
+    """Simplified dataset generator instance."""
+    return SimpleDatasetGenerator(cache_dir, random_seed)
+
+
+# Classification datasets
+@pytest.fixture(scope="session")
+def small_classification(generator):
+    """Small classification dataset (50 samples, 2 classes) using IMDB."""
+    return generator.generate_classification_dataset(size="small")
 
 
 @pytest.fixture(scope="session")
-def real_data_generator(cache_dir, random_seed):
-    """Real data generator instance using actual datasets."""
-    return RealDataGenerator(cache_dir, random_seed)
+def medium_classification(generator):
+    """Medium classification dataset (200 samples, 2 classes) using IMDB."""
+    return generator.generate_classification_dataset(size="medium")
+
+
+# Multilabel datasets
+@pytest.fixture(scope="session")
+def small_multilabel(generator):
+    """Small multilabel dataset (50 samples, 3 classes)."""
+    return generator.generate_multilabel_dataset(size="small")
 
 
 @pytest.fixture(scope="session")
-def classification_dataset(real_data_generator):
-    """Pre-generated classification dataset using Wine dataset (80 samples, 3 classes)."""
-    return real_data_generator.generate_wine_dataset(
-        n_samples=80,
-        noise_level=0.1
-    )
+def medium_multilabel(generator):
+    """Medium multilabel dataset (200 samples, 3 classes)."""
+    return generator.generate_multilabel_dataset(size="medium")
+
+
+# Regression datasets
+@pytest.fixture(scope="session")
+def small_regression(generator):
+    """Small regression dataset (50 samples) using California housing."""
+    return generator.generate_regression_dataset(size="small")
 
 
 @pytest.fixture(scope="session")
-def small_classification_dataset(real_data_generator):
-    """Small classification dataset using Iris (30 samples, 3 classes)."""
-    return real_data_generator.generate_iris_dataset(
-        n_samples=30,
-        noise_level=0.1
-    )
+def medium_regression(generator):
+    """Medium regression dataset (200 samples) using California housing."""
+    return generator.generate_regression_dataset(size="medium")
+
+
+# Image datasets
+@pytest.fixture(scope="session")
+def small_image(generator):
+    """Small image dataset (50 samples, 10 classes) using MNIST."""
+    return generator.generate_image_dataset(size="small")
 
 
 @pytest.fixture(scope="session")
-def multilabel_dataset(data_generator):
-    """Pre-generated multilabel dataset."""
-    return data_generator.generate_multilabel_data(
-        n_samples=80,
-        n_features=10,
-        n_classes=3
-    )
-
-
-@pytest.fixture(scope="session")
-def regression_dataset(data_generator):
-    """Pre-generated regression dataset."""
-    return data_generator.generate_regression_data(
-        n_samples=80,
-        n_features=10
-    )
-
-
-@pytest.fixture(scope="session")
-def image_dataset(real_data_generator):
-    """Pre-generated image dataset using Digits dataset (80 samples, 10 classes)."""
-    return real_data_generator.generate_digits_dataset(
-        n_samples=80,
-        noise_level=0.1
-    )
-
-
-@pytest.fixture(scope="session")
-def small_image_dataset(real_data_generator):
-    """Small image dataset using Digits for fast tests (30 samples)."""
-    return real_data_generator.generate_digits_dataset(
-        n_samples=30,
-        noise_level=0.1
-    )
-
-
-@pytest.fixture(scope="session")
-def huggingface_image_dataset(real_data_generator):
-    """Hugging Face image dataset using MNIST (80 samples, 10 classes)."""
-    try:
-        return real_data_generator.generate_huggingface_image_dataset(
-            n_samples=80,
-            noise_level=0.1,
-            dataset_name="mnist",
-            include_image_column=True
-        )
-    except ImportError:
-        pytest.skip("Hugging Face datasets not installed")
-
-
-@pytest.fixture(scope="session")
-def small_huggingface_image_dataset(real_data_generator):
-    """Small Hugging Face image dataset using Fashion MNIST for fast tests (30 samples)."""
-    try:
-        return real_data_generator.generate_huggingface_image_dataset(
-            n_samples=30,
-            noise_level=0.1,
-            dataset_name="fashion_mnist",
-            include_image_column=True
-        )
-    except ImportError:
-        pytest.skip("Hugging Face datasets not installed")
+def medium_image(generator):
+    """Medium image dataset (200 samples, 10 classes) using MNIST."""
+    return generator.generate_image_dataset(size="medium")
 
 
 # Configuration for pytest

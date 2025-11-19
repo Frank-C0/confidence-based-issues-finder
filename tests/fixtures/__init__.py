@@ -1,31 +1,15 @@
 """
-Test fixtures for Datalab testing.
+Simplified test fixtures for Datalab testing.
 
-This module provides both synthetic and real data generators:
+Provides simple dataset generators with real data from HuggingFace:
+- SimpleDatasetGenerator: Creates small and medium datasets for all task types
 
-Synthetic generators (fast, simple):
-- DatalabInputGenerator: Generate synthetic data for quick testing
-
-Real data generators (realistic, cached):
-- RealDataGenerator: Use real datasets (Iris, Wine, MNIST, CIFAR-10, etc.)
-- DatasetLoader: Download and cache real datasets
-- FeatureExtractor: Extract features using real methods
-- ModelTrainer: Train real models and generate predictions
-
-All real data generators use joblib caching to avoid repeated computation.
+All datasets include labels, pred_probs, features, and knn_graph.
+Results are cached with joblib to avoid recomputation.
 """
 
-from .data_generators import DatalabInputGenerator, create_minimal_dataset
-from .dataset_loaders import DatasetLoader
-from .feature_extractors import FeatureExtractor
-from .model_trainers import ModelTrainer
-from .real_data_generators import RealDataGenerator
+from .simple_datasets import SimpleDatasetGenerator
 
 __all__ = [
-    "DatalabInputGenerator",
-    "DatasetLoader",
-    "FeatureExtractor",
-    "ModelTrainer",
-    "RealDataGenerator",
-    "create_minimal_dataset",
+    "SimpleDatasetGenerator",
 ]
