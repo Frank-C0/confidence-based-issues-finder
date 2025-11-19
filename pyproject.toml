@@ -1,0 +1,96 @@
+[project]
+name = "cleanlab_plugins"
+version = "0.1.0"
+description = "Plugins and utilities for CleanLab Datalab"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+readme = "README.md"
+license = {text = "MIT"}
+dependencies = [
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "-x",
+    "--strict-markers",
+    "--durations=10",
+]
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::FutureWarning",
+    "ignore::DeprecationWarning",
+]
+
+
+# =========================================
+# Configuración de Ruff (linting & formatting)
+# =========================================
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["cleanlab_plugins", "tests"]
+include = [
+  "pyproject.toml",
+  "cleanlab_plugins/**/*.py",
+  "tests/**/*.py",
+]
+exclude = [
+  ".git",
+  ".mypy_cache",
+  ".ruff_cache",
+  "build",
+  "dist",
+  "logs",
+  "data",
+]
+
+# -----------------------------------------
+# Reglas de linting
+# -----------------------------------------
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle: errores
+  "W",    # pycodestyle: warnings
+  "F",    # pyflakes
+  "I",    # isort: orden de imports
+  "UP",   # pyupgrade: modernización
+  "B",    # flake8-bugbear: posibles bugs
+  "C4",   # flake8-comprehensions
+  "PIE",  # flake8-pie
+  "SIM",  # flake8-simplify
+  "DTZ",  # uso naive de datetime
+  "RUF",  # reglas propias de Ruff
+  # "S"  # seguridad básica (subset bandit)
+]
+ignore = [
+  "E501",   # líneas largas (delegado al formatter)
+  "B008",   # argumentos con llamadas por defecto
+  "B905",   # zip sin strict=True
+  "SIM108", # ternario sugerido (preferencia personal)
+  # "UP007" # Union | sintaxis, descomenta si soportas 3.10+
+]
+unfixable = [
+  # códigos que Ruff no debe arreglar automáticamente
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cleanlab_plugins"]
+force-sort-within-sections = true
+combine-as-imports = true
+split-on-trailing-comma = false
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = false  # true si soportas <3.9 y usas annotations
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
