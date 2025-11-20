@@ -1,8 +1,8 @@
 from collections.abc import Callable
 import logging
-from typing import Any, ClassVar
+from typing import Annotated, Any, ClassVar, Literal
 
-from pydantic.v1 import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Configuración de logging
 logger = logging.getLogger("cleanlab.validator")
@@ -16,10 +16,11 @@ logger.setLevel(logging.DEBUG)
 class BaseIssueSchema(BaseModel):
     """Esquema base con información de referencia y validaciones comunes."""
 
-    class Config:
-        extra = "forbid"
-        arbitrary_types_allowed = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        extra="forbid",
+        arbitrary_types_allowed=True,
+        validate_assignment=True,
+    )
 
     # Información de referencia para debugging y documentación
     _source_module: ClassVar[str] = ""
@@ -40,21 +41,10 @@ class BaseIssueSchema(BaseModel):
 class DistanceMetricSchema(BaseModel):
     """Esquema para validar métricas de distancia."""
 
-    metric: str | Callable | None = Field(
+    metric: Literal["cosine", "euclidean", "manhattan", "l1", "l2"] | Callable | None = Field(
         default=None,
         description="Métrica de distancia: 'cosine', 'euclidean', 'manhattan', 'l1', 'l2', o función callable personalizada",
     )
-
-    @validator("metric")
-    def validate_metric(cls, v):
-        if v is None:
-            return v
-        if callable(v):
-            return v
-        valid_metrics = ["cosine", "euclidean", "manhattan", "l1", "l2"]
-        if v not in valid_metrics:
-            raise ValueError(f"metric debe ser uno de {valid_metrics} o una función callable")
-        return v
 
 
 class KNNParametersSchema(BaseModel):
@@ -75,7 +65,9 @@ class KNNParametersSchema(BaseModel):
 class FindLabelIssuesKwargsSchema(BaseModel):
     """Parámetros para find_label_issues en CleanLearning."""
 
-    filter_by: str | None = Field(
+    filter_by: (
+        Literal["prune_by_noise_rate", "prune_by_class", "both", "confident_learning", "predicted_neq_given"] | None
+    ) = Field(
         default=None,
         description="Método para filtrar issues de labels: 'prune_by_noise_rate', 'prune_by_class', 'both', 'confident_learning', 'predicted_neq_given'",
     )
@@ -101,25 +93,11 @@ class FindLabelIssuesKwargsSchema(BaseModel):
 
     verbose: bool | None = Field(default=False, description="Modo verboso")
 
-    @validator("filter_by")
-    def validate_filter_by(cls, v):
-        valid_methods = [
-            "prune_by_noise_rate",
-            "prune_by_class",
-            "both",
-            "confident_learning",
-            "predicted_neq_given",
-            None,
-        ]
-        if v not in valid_methods:
-            raise ValueError(f"filter_by debe ser uno de: {valid_methods}")
-        return v
-
 
 class LabelQualityScoresKwargsSchema(BaseModel):
     """Parámetros para get_label_quality_scores en CleanLearning."""
 
-    method: str | None = Field(
+    method: Literal["self_confidence", "normalized_margin", "confidence_weighted_entropy"] | None = Field(
         default="self_confidence",
         description="Método para calcular calidad de labels: 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'",
     )
@@ -131,13 +109,6 @@ class LabelQualityScoresKwargsSchema(BaseModel):
     weight_ensemble_members: bool | None = Field(
         default=False, description="Ponderar miembros del ensemble por su precisión"
     )
-
-    @validator("method")
-    def validate_method(cls, v):
-        valid_methods = ["self_confidence", "normalized_margin", "confidence_weighted_entropy"]
-        if v not in valid_methods:
-            raise ValueError(f"method debe ser uno de: {valid_methods}")
-        return v
 
 
 class CleanLearningKwargsSchema(BaseModel):
@@ -153,7 +124,7 @@ class CleanLearningKwargsSchema(BaseModel):
         default=False, description="Forzar consistencia numérica de estimaciones latentes"
     )
 
-    pulearning: int | None | None = Field(
+    pulearning: Literal[0, 1] | None = Field(
         default=None, description="None para aprendizaje supervisado normal, 0 o 1 para PU learning"
     )
 
@@ -186,33 +157,22 @@ class CleanLearningKwargsSchema(BaseModel):
         default=None, description="[ADVERTENCIA: Actualmente sin efecto] Función de validación personalizada"
     )
 
-    @validator("cv_n_folds")
-    def validate_cv_n_folds(cls, v):
-        if v < 2:
-            raise ValueError("cv_n_folds debe ser al menos 2")
-        return v
-
-    @validator("pulearning")
-    def validate_pulearning(cls, v):
-        if v not in [None, 0, 1]:
-            raise ValueError("pulearning debe ser None, 0, o 1")
-        return v
-
-    @validator("find_label_issues_kwargs", "label_quality_scores_kwargs", pre=True)
-    def convert_dict_to_schema(cls, v):
+    @field_validator("find_label_issues_kwargs", mode="before")
+    @classmethod
+    def convert_find_label_issues_kwargs(cls, v):
         if v is None:
             return None
         if isinstance(v, dict):
-            if (
-                "find_label_issues_kwargs" in cls.__fields__
-                and cls.__fields__["find_label_issues_kwargs"].type_ == FindLabelIssuesKwargsSchema
-            ):
-                return FindLabelIssuesKwargsSchema(**v)
-            elif (
-                "label_quality_scores_kwargs" in cls.__fields__
-                and cls.__fields__["label_quality_scores_kwargs"].type_ == LabelQualityScoresKwargsSchema
-            ):
-                return LabelQualityScoresKwargsSchema(**v)
+            return FindLabelIssuesKwargsSchema(**v)
+        return v
+
+    @field_validator("label_quality_scores_kwargs", mode="before")
+    @classmethod
+    def convert_label_quality_scores_kwargs(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, dict):
+            return LabelQualityScoresKwargsSchema(**v)
         return v
 
 
@@ -246,15 +206,11 @@ class OODParamsSchema(BaseModel):
         default=None, description="Ajustar probabilidades predichas para OOD detection"
     )
 
-    method: str | None = Field(default=None, description="Método para OOD: 'entropy', 'least_confidence', 'gen'")
+    method: Literal["entropy", "least_confidence", "gen"] | None = Field(
+        default=None, description="Método para OOD: 'entropy', 'least_confidence', 'gen'"
+    )
 
     confident_thresholds: Any | None = Field(default=None, description="Umbrales confidentes para OOD detection")
-
-    @validator("method")
-    def validate_method(cls, v):
-        if v is not None and v not in ["entropy", "least_confidence", "gen"]:
-            raise ValueError("method debe ser 'entropy', 'least_confidence', o 'gen'")
-        return v
 
 
 class OODKwargsSchema(BaseModel):
@@ -296,7 +252,9 @@ class LabelIssueSchema(BaseIssueSchema):
     )
 
     # Parámetros extraídos de _process_find_label_issues_kwargs
-    thresholds: list[float] | None = Field(default=None, description="Umbrales para CleanLearning.find_label_issues()")
+    thresholds: Annotated[list[Annotated[float, Field(ge=0, le=1)]], Field(default=None)] = Field(
+        default=None, description="Umbrales para CleanLearning.find_label_issues()"
+    )
 
     noise_matrix: Any | None = Field(default=None, description="Matriz de noise para CleanLearning.find_label_issues()")
 
@@ -313,16 +271,6 @@ class LabelIssueSchema(BaseIssueSchema):
     validation_func: Any | None = Field(
         default=None, description="[ADVERTENCIA: Sin efecto actual] Función de validación"
     )
-
-    @validator("thresholds")
-    def validate_thresholds(cls, v):
-        if v is not None:
-            if not isinstance(v, list):
-                raise ValueError("thresholds debe ser una lista")
-            for threshold in v:
-                if not isinstance(threshold, (int, float)) or not (0 <= threshold <= 1):
-                    raise ValueError("Cada threshold debe ser un número entre 0 y 1")
-        return v
 
 
 class RegressionLabelIssueSchema(BaseIssueSchema):
@@ -383,13 +331,8 @@ class OutlierIssueSchema(BaseIssueSchema, KNNParametersSchema):
 
     ood_kwargs: OODKwargsSchema | None = Field(default=None, description="Keyword arguments para OutOfDistribution")
 
-    @validator("threshold")
-    def validate_threshold(cls, v):
-        if v is not None and not (0 <= v <= 1):
-            raise ValueError("threshold debe estar entre 0 y 1")
-        return v
-
-    @validator("ood_kwargs", pre=True)
+    @field_validator("ood_kwargs", mode="before")
+    @classmethod
     def validate_ood_kwargs(cls, v):
         if v is None:
             return None
@@ -423,12 +366,6 @@ class NearDuplicateIssueSchema(BaseIssueSchema, KNNParametersSchema):
         description="Número de vecinos para construcción del grafo KNN (no afecta resultados de duplicados)",
     )
 
-    @validator("threshold")
-    def validate_threshold(cls, v):
-        if v is not None and v < 0:
-            raise ValueError("threshold debe ser mayor o igual a 0")
-        return v
-
 
 class NonIIDIssueSchema(BaseIssueSchema, KNNParametersSchema):
     """
@@ -457,12 +394,6 @@ class NonIIDIssueSchema(BaseIssueSchema, KNNParametersSchema):
         default=0.05, ge=0.0, le=1.0, description="Umbral de significancia estadística para tests IID"
     )
 
-    @validator("significance_threshold")
-    def validate_significance_threshold(cls, v):
-        if v is not None and not (0 <= v <= 1):
-            raise ValueError("significance_threshold debe estar entre 0 y 1")
-        return v
-
 
 class ClassImbalanceIssueSchema(BaseIssueSchema):
     """
@@ -480,12 +411,6 @@ class ClassImbalanceIssueSchema(BaseIssueSchema):
     threshold: float | None = Field(
         default=0.1, ge=0.0, le=1.0, description="Fracción mínima de muestras por clase para considerar balance"
     )
-
-    @validator("threshold")
-    def validate_threshold(cls, v):
-        if v is not None and not (0 <= v <= 1):
-            raise ValueError("threshold debe estar entre 0 y 1")
-        return v
 
 
 class UnderperformingGroupIssueSchema(BaseIssueSchema, KNNParametersSchema):
@@ -522,12 +447,6 @@ class UnderperformingGroupIssueSchema(BaseIssueSchema, KNNParametersSchema):
         default=None, description="IDs de cluster precomputados para cada ejemplo (avanzaado)"
     )
 
-    @validator("threshold")
-    def validate_threshold(cls, v):
-        if v is not None and not (0 <= v <= 1):
-            raise ValueError("threshold debe estar entre 0 y 1")
-        return v
-
 
 class DataValuationIssueSchema(BaseIssueSchema, KNNParametersSchema):
     """
@@ -549,12 +468,6 @@ class DataValuationIssueSchema(BaseIssueSchema, KNNParametersSchema):
     )
 
     k: int | None = Field(default=10, ge=1, description="Número de vecinos para cálculo de KNN-Shapley")
-
-    @validator("threshold")
-    def validate_threshold(cls, v):
-        if v is not None and v < 0:
-            raise ValueError("threshold debe ser mayor o igual a 0")
-        return v
 
 
 class NullIssueSchema(BaseIssueSchema):
@@ -732,8 +645,7 @@ class ClassificationConfigSchema(BaseModel):
         default=None, description="Configuración para spurious correlations"
     )
 
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class RegressionConfigSchema(BaseModel):
@@ -753,8 +665,7 @@ class RegressionConfigSchema(BaseModel):
         default=None, description="Configuración para identifier column issues"
     )
 
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class MultilabelConfigSchema(BaseModel):
@@ -774,8 +685,7 @@ class MultilabelConfigSchema(BaseModel):
         default=None, description="Configuración para identifier column issues"
     )
 
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 TASK_SCHEMA_REGISTRY = {
