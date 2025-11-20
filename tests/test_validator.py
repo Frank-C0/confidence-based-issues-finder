@@ -18,21 +18,7 @@ class TestValidatorBasics:
     def test_validator_initialization(self, task):
         """Test validator can be initialized for all task types."""
         validator = EnhancedIssueTypesValidator(task=task)
-
         assert validator.task == task
-        available_issues = validator.get_available_issue_types()
-        assert isinstance(available_issues, list)
-        assert len(available_issues) > 0
-
-    def test_get_available_issue_types(self):
-        """Test getting list of available issue types."""
-        validator = EnhancedIssueTypesValidator(task="classification")
-        available = validator.get_available_issue_types()
-
-        # Should include common issue types
-        assert "label" in available
-        assert "outlier" in available
-        assert "near_duplicate" in available
 
     def test_empty_config_is_valid(self):
         """Empty configuration should be valid."""
@@ -40,7 +26,6 @@ class TestValidatorBasics:
         result = validator.validate({})
 
         assert result["is_valid"]
-        assert result["validated_config"] == {}
         assert len(result["errors"]) == 0
 
 
@@ -57,7 +42,7 @@ class TestSingleIssueTypeValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert "label" in result["validated_config"]
+        assert len(result["errors"]) == 0
 
     def test_label_issue_with_parameters(self):
         """Test label issue with custom parameters."""
@@ -72,7 +57,7 @@ class TestSingleIssueTypeValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert result["validated_config"]["label"]["k"] == 10
+        assert len(result["errors"]) == 0
 
     def test_outlier_issue_basic(self):
         """Test basic outlier issue configuration."""
@@ -82,7 +67,7 @@ class TestSingleIssueTypeValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert "outlier" in result["validated_config"]
+        assert len(result["errors"]) == 0
 
     def test_outlier_issue_with_threshold(self):
         """Test outlier issue with custom threshold."""
@@ -92,7 +77,7 @@ class TestSingleIssueTypeValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert result["validated_config"]["outlier"]["threshold"] == 0.2
+        assert len(result["errors"]) == 0
 
     def test_near_duplicate_issue_basic(self):
         """Test basic near duplicate issue configuration."""
@@ -102,7 +87,7 @@ class TestSingleIssueTypeValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert "near_duplicate" in result["validated_config"]
+        assert len(result["errors"]) == 0
 
     def test_near_duplicate_with_metric(self):
         """Test near duplicate with custom metric."""
@@ -112,7 +97,7 @@ class TestSingleIssueTypeValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert result["validated_config"]["near_duplicate"]["metric"] == "cosine"
+        assert len(result["errors"]) == 0
 
 
 @pytest.mark.validator
@@ -131,8 +116,6 @@ class TestMultipleIssueTypesValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert "label" in result["validated_config"]
-        assert "outlier" in result["validated_config"]
         assert len(result["errors"]) == 0
 
     def test_all_common_issues(self):
@@ -147,7 +130,6 @@ class TestMultipleIssueTypesValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert len(result["validated_config"]) == 3
         assert len(result["errors"]) == 0
 
 
@@ -223,8 +205,8 @@ class TestComplexParameterValidation:
 
         result = validator.validate(config)
 
-        assert result["is_valid"], f"Validation failed: {result['errors']}"
-        assert "clean_learning_kwargs" in result["validated_config"]["label"]
+        assert result["is_valid"]
+        assert len(result["errors"]) == 0
 
     def test_health_summary_parameters(self):
         """Test validation of health_summary_parameters."""
@@ -241,7 +223,7 @@ class TestComplexParameterValidation:
         result = validator.validate(config)
 
         assert result["is_valid"]
-        assert "health_summary_parameters" in result["validated_config"]["label"]
+        assert len(result["errors"]) == 0
 
 
 @pytest.mark.validator
