@@ -15,11 +15,7 @@ from typing import Any
 import joblib
 import numpy as np
 from scipy.sparse import csr_matrix
-from sklearn.datasets import (
-    make_classification,
-    make_multilabel_classification,
-    make_regression,
-)
+from sklearn.datasets import make_classification, make_multilabel_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import cross_val_predict
 from sklearn.multioutput import MultiOutputClassifier

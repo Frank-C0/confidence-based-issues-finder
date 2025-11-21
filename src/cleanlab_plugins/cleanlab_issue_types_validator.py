@@ -426,17 +426,22 @@ class UnderperformingGroupIssueSchema(BaseIssueSchema, KNNParametersSchema):
     _description = "Manages issues related to underperforming group examples"
     _task_types = ["classification"]
 
-    metric: str | Callable | None = Field(default=None, description="Métrica de distancia para clustering")
+    metric: str | Callable | None = Field(
+        default=None,
+        description="Métrica de distancia para clustering. If None, the metric is determined based on the feature array shape.",
+    )  # if none, UnderperformingGroupIssueManager uses None and internally determine the metric
 
     threshold: float | None = Field(
         default=0.1, ge=0.0, le=1.0, description="Umbral para determinar grupos con bajo rendimiento"
-    )
+    )  # if none, UnderperformingGroupIssueManager uses 0.1
 
-    k: int | None = Field(default=10, ge=1, description="Número de vecinos para construcción del grafo KNN")
+    k: int = Field(
+        default=10, ge=1, description="Número de vecinos para construcción del grafo KNN"
+    )  # if none, UnderperformingGroupIssueManager uses 10
 
     clustering_kwargs: dict[str, Any] | None = Field(
         default_factory=dict, description="Argumentos para el algoritmo de clustering (e.g., DBSCAN)"
-    )
+    )  # if none, UnderperformingGroupIssueManager uses {}. Si cluster_ids se proveen, no se usa clustering_kwargs
 
     min_cluster_samples: int | None = Field(
         default=5, ge=1, description="Mínimo número de ejemplos por cluster para ser considerado"
@@ -448,7 +453,7 @@ class UnderperformingGroupIssueSchema(BaseIssueSchema, KNNParametersSchema):
     )
 
 
-class DataValuationIssueSchema(BaseIssueSchema, KNNParametersSchema):
+class DataValuationIssueSchema(BaseIssueSchema, KNNParametersSchema):  # Revisado
     """
     Valida parámetros para DataValuationIssueManager.
 
@@ -461,13 +466,18 @@ class DataValuationIssueSchema(BaseIssueSchema, KNNParametersSchema):
     _description = "Detect which examples in a dataset are least valuable via an approximate Data Shapely value"
     _task_types = ["classification", "regression", "multilabel"]
 
-    metric: str | Callable | None = Field(default=None, description="Métrica de distancia para data valuation")
-
-    threshold: float | None = Field(
-        default=0.5, ge=0.0, description="Umbral para ejemplos con baja data valuation score"
+    metric: Literal["cosine", "euclidean"] | Callable | None = Field(
+        default=None,
+        description="Métrica de distancia para data valuation. If None, the metric is determined based on the feature array shape.",
     )
 
-    k: int | None = Field(default=10, ge=1, description="Número de vecinos para cálculo de KNN-Shapley")
+    threshold: float = Field(
+        default=0.5, ge=0.0, description="Umbral para ejemplos con baja data valuation score"
+    )  # if none, DataValuationIssueManager uses 0.5
+
+    k: int = Field(
+        default=10, ge=1, description="Número de vecinos para cálculo de KNN-Shapley"
+    )  # if none, DataValuationIssueManager uses 10
 
 
 class NullIssueSchema(BaseIssueSchema):
@@ -514,9 +524,8 @@ class MultilabelIssueSchema(BaseIssueSchema):
     _description = "Manages label issues in Datalab for multilabel tasks"
     _task_types = ["multilabel"]
 
-    # No tiene parámetros específicos en constructor según documentación
 
-
+# No tiene parámetros específicos en constructor según documentación
 # =============================================================================
 # ESQUEMAS PARA IMAGE ISSUES Y SPURIOUS CORRELATIONS
 # =============================================================================
@@ -529,8 +538,8 @@ class ImageIssueBaseSchema(BaseIssueSchema):
     _description = "Image-specific issue detection"
     _task_types = ["classification"]  # Principalmente para classification con imágenes
 
-    threshold: float | None = Field(
-        default=None, ge=0.0, le=1.0, description="Umbral para detección del issue (0-1, menor = menos sensibilidad)"
+    threshold: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="Umbral para detección del issue (0-1, menor = menos sensibilidad)"
     )
 
 
@@ -539,11 +548,15 @@ class DarkImageIssueSchema(ImageIssueBaseSchema):
 
     _source_class = "DarkIssueManager"
 
+    threshold: float = Field(default=0.32, ge=0.0, le=1.0, description="Umbral para detección de imágenes oscuras")
+
 
 class LightImageIssueSchema(ImageIssueBaseSchema):
     """Detecta imágenes excesivamente brillantes."""
 
     _source_class = "LightIssueManager"
+
+    threshold: float = Field(default=0.05, ge=0.0, le=1.0, description="Umbral para detección de imágenes brillantes")
 
 
 class BlurryImageIssueSchema(ImageIssueBaseSchema):
@@ -551,11 +564,18 @@ class BlurryImageIssueSchema(ImageIssueBaseSchema):
 
     _source_class = "BlurryIssueManager"
 
+    threshold: float = Field(default=0.29, ge=0.0, le=1.0, description="Umbral para detección de imágenes borrosas")
+    normalizing_factor: float = Field(default=0.01, description="Factor de normalización para blurry detection")
+    color_threshold: float = Field(default=0.18, description="Umbral de color para blurry detection")
+
 
 class LowInformationImageIssueSchema(ImageIssueBaseSchema):
     """Detecta imágenes con baja información/entropía."""
 
     _source_class = "LowInformationIssueManager"
+
+    threshold: float = Field(default=0.15, ge=0.0, le=1.0, description="Umbral para detección de baja información")
+    normalizing_factor: float = Field(default=0.1, description="Factor de normalización para low information detection")
 
 
 class OddAspectRatioImageIssueSchema(ImageIssueBaseSchema):
@@ -563,35 +583,53 @@ class OddAspectRatioImageIssueSchema(ImageIssueBaseSchema):
 
     _source_class = "OddAspectRatioIssueManager"
 
+    threshold: float = Field(default=0.35, ge=0.0, le=1.0, description="Umbral para detección de aspecto inusual")
+
 
 class OddSizeImageIssueSchema(ImageIssueBaseSchema):
     """Detecta imágenes con tamaños inusuales."""
 
     _source_class = "OddSizeIssueManager"
 
-    threshold: float | None = Field(
-        default=10.0, ge=0.0, description="Umbral para tamaño inusual (mayor = menos sensibilidad)"
-    )
+    iqr_factor: float = Field(default=3.0, ge=0.0, description="Factor IQR para detección de tamaño inusual")
+
+
+class GrayscaleImageIssueSchema(ImageIssueBaseSchema):
+    """Detecta imágenes en escala de grises."""
+
+    _source_class = "GrayscaleIssueManager"
 
 
 class ImageIssueTypesSchema(BaseModel):
     """Esquema que agrupa todos los tipos de issues de imágenes para validación."""
 
-    dark: DarkImageIssueSchema | None = Field(default=None, description="Parámetros para detección de imágenes oscuras")
+    dark: DarkImageIssueSchema | None = Field(
+        default=None,
+        description="Parámetros para detección de imágenes oscuras",
+    )
     light: LightImageIssueSchema | None = Field(
-        default=None, description="Parámetros para detección de imágenes brillantes"
+        default=None,
+        description="Parámetros para detección de imágenes brillantes",
     )
     blurry: BlurryImageIssueSchema | None = Field(
-        default=None, description="Parámetros para detección de imágenes borrosas"
+        default=None,
+        description="Parámetros para detección de imágenes borrosas",
     )
     low_information: LowInformationImageIssueSchema | None = Field(
-        default=None, description="Parámetros para detección de imágenes con baja información"
+        default=None,
+        description="Parámetros para detección de imágenes con baja información",
     )
     odd_aspect_ratio: OddAspectRatioImageIssueSchema | None = Field(
-        default=None, description="Parámetros para detección de imágenes con aspecto inusual"
+        default=None,
+        description="Parámetros para detección de imágenes con aspecto inusual",
     )
     odd_size: OddSizeImageIssueSchema | None = Field(
-        default=None, description="Parámetros para detección de imágenes con tamaño inusual"
+        default=None,
+        description="Parámetros para detección de imágenes con tamaño inusual",
+    )
+    grayscale: GrayscaleImageIssueSchema | None = Field(
+        default=None,
+        description="Parámetros para detección de imágenes en escala de grises",
     )
 
 
@@ -688,8 +726,24 @@ class MultilabelConfigSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-TASK_SCHEMA_REGISTRY = {
+TASK_SCHEMA_REGISTRY: dict[str, BaseModel] = {
     "classification": ClassificationConfigSchema,
     "regression": RegressionConfigSchema,
     "multilabel": MultilabelConfigSchema,
 }
+
+
+if __name__ == "__main__":
+    # Prueba rápida del registro de esquemas
+    for task, schema in TASK_SCHEMA_REGISTRY.items():
+        # logger.info(f"Esquema para tarea '{task}': {schema.schema_json(indent=2)}")
+
+        # print(f"Esquema para tarea '{task}':\n{schema.schema_json(indent=2)}\n")
+
+        import json
+
+        # guardar esquema en archivo JSON
+        with open(f"{task}_issue_schema.json", "w") as f:
+            json.dump(schema.model_json_schema(), f, indent=2)
+
+        break
