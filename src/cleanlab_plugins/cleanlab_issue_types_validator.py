@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from enum import Enum
 import logging
 from typing import Annotated, Any, ClassVar, Literal
 
@@ -7,6 +8,42 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 # Configuración de logging
 logger = logging.getLogger("cleanlab.validator")
 logger.setLevel(logging.DEBUG)
+
+# =============================================================================
+# ENUMERACIONES PARA LITERALES
+# =============================================================================
+
+class DistanceMetric(Enum):
+    COSINE = "cosine"
+    EUCLIDEAN = "euclidean"
+    MANHATTAN = "manhattan"
+    L1 = "l1"
+    L2 = "l2"
+
+class FilterBy(Enum):
+    PRUNE_BY_NOISE_RATE = "prune_by_noise_rate"
+    PRUNE_BY_CLASS = "prune_by_class"
+    BOTH = "both"
+    CONFIDENT_LEARNING = "confident_learning"
+    PREDICTED_NEQ_GIVEN = "predicted_neq_given"
+
+class LabelQualityMethod(Enum):
+    SELF_CONFIDENCE = "self_confidence"
+    NORMALIZED_MARGIN = "normalized_margin"
+    CONFIDENCE_WEIGHTED_ENTROPY = "confidence_weighted_entropy"
+
+class PULearning(Enum):
+    ZERO = 0
+    ONE = 1
+
+class OODMethod(Enum):
+    ENTROPY = "entropy"
+    LEAST_CONFIDENCE = "least_confidence"
+    GEN = "gen"
+
+class DataValuationMetric(Enum):
+    COSINE = "cosine"
+    EUCLIDEAN = "euclidean"
 
 # =============================================================================
 # ESQUEMAS BASE Y UTILITARIOS
@@ -41,7 +78,7 @@ class BaseIssueSchema(BaseModel):
 class DistanceMetricSchema(BaseModel):
     """Esquema para validar métricas de distancia."""
 
-    metric: Literal["cosine", "euclidean", "manhattan", "l1", "l2"] | Callable | None = Field(
+    metric: DistanceMetric | Callable | None = Field(
         default=None,
         description="Métrica de distancia: 'cosine', 'euclidean', 'manhattan', 'l1', 'l2', o función callable personalizada",
     )
@@ -66,7 +103,7 @@ class FindLabelIssuesKwargsSchema(BaseModel):
     """Parámetros para find_label_issues en CleanLearning."""
 
     filter_by: (
-        Literal["prune_by_noise_rate", "prune_by_class", "both", "confident_learning", "predicted_neq_given"] | None
+        FilterBy | None
     ) = Field(
         default=None,
         description="Método para filtrar issues de labels: 'prune_by_noise_rate', 'prune_by_class', 'both', 'confident_learning', 'predicted_neq_given'",
@@ -97,7 +134,7 @@ class FindLabelIssuesKwargsSchema(BaseModel):
 class LabelQualityScoresKwargsSchema(BaseModel):
     """Parámetros para get_label_quality_scores en CleanLearning."""
 
-    method: Literal["self_confidence", "normalized_margin", "confidence_weighted_entropy"] | None = Field(
+    method: LabelQualityMethod | None = Field(
         default="self_confidence",
         description="Método para calcular calidad de labels: 'self_confidence', 'normalized_margin', 'confidence_weighted_entropy'",
     )
@@ -124,7 +161,7 @@ class CleanLearningKwargsSchema(BaseModel):
         default=False, description="Forzar consistencia numérica de estimaciones latentes"
     )
 
-    pulearning: Literal[0, 1] | None = Field(
+    pulearning: PULearning | None = Field(
         default=None, description="None para aprendizaje supervisado normal, 0 o 1 para PU learning"
     )
 
@@ -206,7 +243,7 @@ class OODParamsSchema(BaseModel):
         default=None, description="Ajustar probabilidades predichas para OOD detection"
     )
 
-    method: Literal["entropy", "least_confidence", "gen"] | None = Field(
+    method: OODMethod | None = Field(
         default=None, description="Método para OOD: 'entropy', 'least_confidence', 'gen'"
     )
 
@@ -466,7 +503,7 @@ class DataValuationIssueSchema(BaseIssueSchema, KNNParametersSchema):  # Revisad
     _description = "Detect which examples in a dataset are least valuable via an approximate Data Shapely value"
     _task_types = ["classification", "regression", "multilabel"]
 
-    metric: Literal["cosine", "euclidean"] | Callable | None = Field(
+    metric: DataValuationMetric | Callable | None = Field(
         default=None,
         description="Métrica de distancia para data valuation. If None, the metric is determined based on the feature array shape.",
     )
